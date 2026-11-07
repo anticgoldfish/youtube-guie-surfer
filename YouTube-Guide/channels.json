@@ -1,0 +1,8 @@
+{
+  "version": 3,
+  "scheduleSchemaVersion": 1,
+  "scheduleHorizonHours": 100,
+  "refreshIntervalHours": 72,
+  "updatedAt": null,
+  "channels": []
+}

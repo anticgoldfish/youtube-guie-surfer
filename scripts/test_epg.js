@@ -1,0 +1,13 @@
+const fs=require('fs'),assert=require('assert');
+const script=fs.readFileSync(__dirname+'/../YouTube-Guide/app.js','utf8');
+const code=script.substring(script.indexOf('const CYCLE_MS'),script.indexOf('function draw()'));
+const {at,makeSchedule,cycleStart}=new Function('now','duration',code+';return {at,makeSchedule,cycleStart}')(()=>0,()=>0);
+const c={id:'ch1',anchor:0,mode:'seeds',order:'shuffle',videos:[{id:'OLD',duration:2400,title:'Old'}],pendingVideos:[{id:'NEW',duration:2100,title:'New'}],activateAt:72*3600000};
+const next=72*3600000;
+c.nextSchedule=makeSchedule(c,next);
+assert.equal(c.nextSchedule.durationHours,100);
+assert.equal(at(c,next+1).video.id,'NEW');
+assert.equal(at(c,next+1).start,next);
+assert.equal(at(c,next+100*3600000-1).video.id,'NEW');
+assert.equal(at(c,next+100*3600000+1).video.id,'NEW');
+console.log('PASS: browser consumes portable 100h EPG and safely falls back to 72h virtual programming');

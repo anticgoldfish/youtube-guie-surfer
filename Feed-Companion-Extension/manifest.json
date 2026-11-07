@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Guide \u2014 Actual Custom Feed Companion",
+  "version": "1.0.8",
+  "description": "Open the real YouTube Custom Feed creator and collect recommendations displayed by YouTube for your Guide channel.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://*.github.io/*"
+      ],
+      "js": [
+        "guide-bridge.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "youtube-assist.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "YouTube Custom Feed Companion",
+    "default_popup": "popup.html"
+  }
+}

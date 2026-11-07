@@ -1,0 +1,135 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>YouTube Guide | Live TV • AI Recommendations</title>
+<style>
+:root{font-family:Arial,'Trebuchet MS',sans-serif;color:#edf6ff;background:#040b17}*{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{background:linear-gradient(#2869ac,#0d315f);color:#fff;border:1px solid #6ba9ea;border-radius:4px;padding:9px 13px;font-weight:700;cursor:pointer}button:hover{filter:brightness(1.18)}button:disabled{opacity:.4;cursor:not-allowed}header{background:linear-gradient(#2164ae,#0b356d 70%,#0b244f);border-bottom:3px solid #74b8ff;padding:14px 20px;display:flex;gap:12px;align-items:center;justify-content:space-between}.logo{font-weight:900;font-size:24px;text-shadow:0 2px #08152a;letter-spacing:-.7px}.logo span{color:#ffe068}.tag{font-size:11px;letter-spacing:2px;color:#acd8ff}.right{display:flex;align-items:center;gap:11px}.clock{font-size:18px;font-weight:bold}main{max-width:1500px;margin:auto;padding:14px}.upper{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.8fr);gap:12px}.screen{aspect-ratio:16/9;background:#000;border:5px solid #1d4978;position:relative;box-shadow:0 3px 22px #0009;overflow:hidden}#player{position:absolute;inset:0;width:100%;height:100%}.overlay{position:absolute;inset:0;background:radial-gradient(ellipse,#1a4279,#010714 80%);display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:25px;z-index:3;gap:10px}.overlay h2{font-size:22px;margin:0}.overlay p{max-width:460px;line-height:1.45;color:#bed7f4}.overlay button{background:linear-gradient(#ffe87d,#d49316);color:#102a47;font-size:18px;border-color:#fbe49b}.hidden{display:none!important}.no-seek{position:absolute;bottom:0;left:0;right:0;height:49px;background:transparent;z-index:2;pointer-events:auto}.statuspanel{background:linear-gradient(140deg,#164982,#061a36);border:1px solid #4c90c6;display:flex;flex-direction:column}.statuspanel h3{margin:0;background:linear-gradient(#2780ce,#105197);border-bottom:2px solid #77bbec;padding:11px 14px;letter-spacing:1px;font-size:13px}.statinner{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1}.onair{align-self:flex-start;background:#c13526;color:white;font-size:11px;font-weight:900;letter-spacing:1px;padding:5px 9px}.channelid{font-weight:bold;color:#ffdc61}.progtitle{font-size:26px;font-weight:800;line-height:1.15;overflow-wrap:anywhere}.subtitle{color:#bad6f3;line-height:1.5}.controls{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.message{font-size:12px;color:#bddbf8;line-height:1.5;min-height:25px}.guide{border:2px solid #4b87c1;margin-top:15px;background:#09274e}.guideheading{background:linear-gradient(#2777c1,#10478c);border-bottom:2px solid #8bc7fa;padding:11px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}.guideheading h2{margin:0;font-size:22px}.guideheadright{display:flex;align-items:center;gap:8px}.guideheadright select{max-width:190px}.infobar{padding:10px 12px;background:#082045;color:#c7defa;font-size:12px}.gridscroll{overflow:auto;max-height:540px}.gridbody{min-width:1020px}.timehead,.line{display:grid;grid-template-columns:180px minmax(840px,1fr)}.timehead{position:sticky;top:0;z-index:6;background:#153d70;border-bottom:2px solid #8dc8fa}.timehead .l{padding:11px;background:#194b85;border-right:2px solid #5797cd;font-weight:bold}.times{display:grid;grid-template-columns:repeat(5,1fr)}.times>div{padding:11px;border-right:1px solid #659dd1;font-weight:bold}.line{height:66px;border-bottom:1px solid #2c679f}.station{display:flex;align-items:center;gap:10px;padding:8px;background:linear-gradient(#1c508a,#0b2e5a);cursor:pointer;border-right:2px solid #659bd0}.line:nth-child(odd) .station{background:linear-gradient(#205995,#0e3669)}.station.selected{background:linear-gradient(#f7cd58,#b67b1b)!important;color:#0f2338}.station b{font-size:22px;min-width:43px;text-align:center}.station small{display:block;opacity:.8;margin-top:4px}.station span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.programs{position:relative;background:#072a54;overflow:hidden}.line:nth-child(odd) .programs{background:#0a3364}.program{position:absolute;top:4px;bottom:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:9px;border-radius:1px;text-align:left;background:linear-gradient(#2365a8,#103c77);border:1px solid #6eabdf;font-weight:400}.program strong{display:block;overflow:hidden;text-overflow:ellipsis}.program small{display:block;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.program.current{border:2px solid #f4dc7d}.marker{position:absolute;top:0;bottom:0;width:2px;background:#ffd75b;pointer-events:none;z-index:4}.marker:before{content:'▼';position:absolute;top:0;transform:translate(-47%,-50%);color:#ffd75b}.footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#0c2c58;padding:10px 14px;color:#d0e7ff;font-size:12px}dialog{max-width:min(680px,calc(100vw - 22px));width:100%;max-height:90vh;overflow:auto;padding:0;color:white;background:linear-gradient(#164b84,#071b39);border:2px solid #79b6f2;border-radius:8px}dialog::backdrop{background:#000b}dialog h2{margin:0;padding:17px;background:linear-gradient(#2984d1,#0d4786)}.form{padding:18px;display:grid;gap:14px}label{font-size:13px;font-weight:700;display:grid;gap:6px}input,textarea,select{background:#05172f;color:white;border:1px solid #66a1d4;border-radius:3px;padding:10px;width:100%}textarea{min-height:120px;resize:vertical}.hint{font-size:12px;color:#bcd9f7;line-height:1.6}.buttons{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.notice{color:#ffde85;font-size:13px;line-height:1.5}.footer button{padding:4px 8px}kbd{border:1px solid #7993b1;background:#051d3c;padding:2px 4px}@media(max-width:900px){.upper{grid-template-columns:1fr}header{flex-wrap:wrap}.screen{max-height:none}.timehead,.line{grid-template-columns:135px minmax(840px,1fr)}.station{padding:6px}.station b{font-size:18px;min-width:30px}}
+ .busy{opacity:.75;pointer-events:none}.chip{font-size:11px;color:#ffdf83}.split{display:grid;grid-template-columns:1fr 1fr;gap:10px}.danger{background:linear-gradient(#a94b43,#6e211f)}.ok{color:#a7f9b6}.tools{border-top:1px solid #5993c2;padding-top:14px}.muted{color:#accde9}.program{cursor:pointer}@media(max-width:580px){.split{grid-template-columns:1fr}} 
+/* v0.8: distinct, spacious GitHub settings area */
+.github-panel{display:flex;flex-direction:column;gap:18px;padding:22px;margin:12px 0 4px;border:1px solid #568fbd;border-radius:12px;background:linear-gradient(165deg,#0b2e58,#071d38);box-shadow:inset 0 1px 0 #ffffff16}
+.github-panel .section-head{display:flex;align-items:center;gap:12px;padding:0 0 16px;border-bottom:1px solid #4876a3}
+.github-panel .section-head h3{margin:0 0 5px;font-size:19px;letter-spacing:.2px}
+.github-panel .section-head p{font-size:12px;color:#a6c8e8;margin:0;line-height:1.5}
+.section-icon{display:grid;place-items:center;min-width:43px;height:43px;background:#173e70;border:1px solid #407baf;border-radius:10px;color:#e4d078;font-size:25px}
+.github-panel>.hint{line-height:1.65}
+.github-panel>.split{gap:15px}
+.github-panel label{gap:9px;min-width:0}
+.github-panel input{min-height:44px}
+.github-panel .buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:4px}
+.github-panel .buttons button{min-height:43px;white-space:normal}
+.github-panel .buttons button:last-child{grid-column:1/-1}
+.github-panel .github-feedback{padding:12px 14px;min-height:42px;border-radius:6px;background:#06172c;border:1px solid #335b81;overflow-wrap:anywhere}
+.recommend-controls{border:1px solid #528ab7;background:#092b50;border-radius:10px;padding:17px;display:grid;gap:15px}
+.recommend-heading{display:flex;flex-direction:column;gap:5px;padding-bottom:13px;border-bottom:1px solid #3b6795}
+.recommend-heading strong{font-size:17px;color:#ffdd71}.recommend-heading span,.field-note{font-size:11px;color:#bad3eb;font-weight:400}
+.recommend-controls label{gap:7px}.recommend-controls .hint{margin:0}
+.preview-action{justify-self:start;background:linear-gradient(#e7c85f,#a87620);color:#10223a;border-color:#f0da86}
+.review-panel{border:1px solid #4e88ba;border-radius:8px;overflow:hidden;background:#06182d}
+.review-title{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:12px;background:#174574}
+.review-title span{font-size:12px;color:#c5dff5}.review-items{max-height:390px;overflow:auto;padding:8px;display:grid;gap:8px}
+.review-video{display:flex;gap:12px;align-items:start;background:#103358;border:1px solid #2d5b85;border-radius:7px;padding:10px;cursor:pointer}
+.review-video input{width:18px;height:18px;flex:0 0 18px;margin-top:2px;accent-color:#f1d369}
+.review-video strong{font-size:13px;font-weight:700;display:block;line-height:1.35}.review-video small{font-size:12px;color:#b6d3ec;display:block;margin-top:5px}
+@media(max-width:580px){.github-panel{padding:14px}.github-panel .buttons{grid-template-columns:1fr}.github-panel .buttons button:last-child{grid-column:auto}.github-panel .split{grid-template-columns:1fr}}
+
+.seed-studio{border:1px solid #528ab7;background:#0a2c50;border-radius:9px;padding:18px;display:grid;gap:17px}.seed-title{font-size:16px;font-weight:800;color:#ffe07d;border-bottom:1px solid #4776a4;padding-bottom:13px}.seed-title span{display:block;color:#b6d4ec;font-size:12px;font-weight:400;margin-top:6px;line-height:1.45}.seed-studio input[type=file]{border-style:dashed;min-height:52px;padding:14px}.seed-feedback{background:#061b33;border:1px solid #41688e;border-radius:5px;padding:12px;line-height:1.5;color:#d2e9ff;font-size:12px}.checkline{display:flex;align-items:center;gap:10px;background:#112f52;padding:10px;border-radius:5px;line-height:1.4}.checkline input{width:18px;height:18px;flex-shrink:0}.debug-panel{margin-top:14px;border:1px solid #e5c76b;border-radius:8px;background:#162840;padding:14px;display:grid;gap:12px}.debug-h{display:grid;gap:4px}.debug-h b{color:#ffe07d}.debug-h small{color:#bdd7ee}.debug-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.debug-actions button{font-size:12px}.debug-panel label{font-size:12px}.debug-panel select{max-width:100%}.seed-studio .review-items{max-height:280px}
+
+.channel-type-heading{color:#ffe080;font-size:13px;font-weight:900;letter-spacing:.07em;margin-top:5px}
+.mode-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mode-card{min-height:103px;text-align:left;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:16px;line-height:1.4;border:2px solid #426d9d;background:linear-gradient(135deg,#143d69,#0a2547);border-radius:10px;box-shadow:none}
+.mode-card strong{font-size:15px;color:#f4f9ff}.mode-card span{font-size:12px;color:#c8dff4;font-weight:400}
+.mode-card.active{border-color:#ffd973;background:linear-gradient(135deg,#385d83,#12345c);box-shadow:inset 0 0 0 1px #be943d}
+.mode-card.active strong{color:#ffdf7d}
+@media(max-width:600px){.mode-cards{grid-template-columns:1fr}.mode-card{min-height:84px}}
+
+/* v1.0.4 — spacious, scannable admin settings */
+.admin-dialog{max-width:min(740px,calc(100vw - 20px))}
+.admin-dialog h2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:20px 24px}
+.admin-layout{padding:22px;display:grid;gap:20px}
+.admin-section{border:1px solid #4c7ca6;border-radius:11px;background:#0a2648;overflow:hidden;box-shadow:0 3px 10px #0003}
+.admin-section-title{display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(120deg,#174e83,#0c345f);border-bottom:1px solid #456e9e}
+.admin-number{width:40px;height:40px;flex:none;display:grid;place-items:center;border:1px solid #9cc4e9;border-radius:9px;color:#ffe178;font-weight:800;background:#082d58}
+.admin-section-title h3{font-size:18px;margin:0 0 5px}
+.admin-section-title p{font-size:12px;line-height:1.4;color:#bcd9f2;margin:0}
+.admin-section-body{padding:21px;display:grid;gap:17px}
+.admin-section-body label{display:grid;gap:8px}
+.admin-section-body input,.admin-section-body select{min-height:44px}
+.admin-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
+.admin-actions button,.primary-wide{min-height:44px;white-space:normal}
+.primary-wide{width:100%;background:linear-gradient(#f6d878,#b98924);color:#10213a;border-color:#ffdf82;font-size:15px}
+.schedule-help{border:1px solid #315c85;border-radius:7px;padding:14px;background:#071b35;color:#c6dff8;font-size:12px;line-height:1.55}
+.schedule-help b{color:#ffe178;font-size:13px}.schedule-help p{margin:5px 0 0}
+.github-feedback{padding:12px;border:1px solid #315a7d;border-radius:7px;background:#06172d;overflow-wrap:anywhere}
+@media(max-width:580px){.admin-layout{padding:12px;gap:12px}.admin-section-body{padding:14px}.admin-section-title{padding:14px}.admin-actions{grid-template-columns:1fr}}
+</style><style>
+.companion-panel{display:grid;gap:12px;padding:18px;border:1px solid #709ac1;border-radius:10px;background:#12365d}
+.companion-panel p{font-size:12px;color:#c3dffa;line-height:1.6;margin:0}
+.companion-panel label{margin-top:3px}
+.companion-panel small{font-size:11px;color:#c4d8ec;line-height:1.5}
+.companion-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.companion-actions button{min-height:48px;line-height:1.3;white-space:normal}
+@media(max-width:600px){.companion-actions{grid-template-columns:1fr}}
+</style></head><body>
+<header><div><div class="logo">YouTube <span>Guide</span> <small style="font-size:11px;color:#b7ddff">v1.0.8</small></div><div class="tag">LIVE • ALWAYS ON • YOUTUBE TV</div></div><div class="right"><button id="adminOpen">⚙ Admin Options</button><div id="clock" class="clock"></div></div></header>
+<main><section class="upper"><div class="screen"><div id="player"></div><div id="nomanip" class="no-seek" title="Live TV: skipping ahead is unavailable"></div><div id="overlay" class="overlay"><div style="font-size:55px;color:#8acbff">◉</div><h2 id="overlayTitle">Welcome to YouTube Guide</h2><p id="overlayDesc">Select a channel to join its live schedule.</p><button id="playNow">▶ WATCH LIVE</button></div></div><div class="statuspanel"><h3>NOW WATCHING</h3><div class="statinner"><div class="onair">● ON AIR</div><div class="channelid" id="channelLabel">NO CHANNEL SELECTED</div><div class="progtitle" id="programLabel">Choose a channel</div><div class="subtitle" id="details">Channels run on a shared schedule around the clock. Join at any time.</div><div class="controls"><button id="previous">CH −</button><button id="next">CH +</button><button id="pause">❚❚ PAUSE</button><button id="back">↶ −10 sec</button><button id="live">● GO LIVE</button><button id="sound">🔊 Sound On</button></div><div class="message" id="message">The guide follows a shared clock.</div><section id="debugPanel" class="debug-panel hidden"><div class="debug-h"><b>🛠 DEBUG MODE</b><small>Admin-only local preview · does not modify the shared broadcast</small></div><div class="debug-actions"><button id="debugPrev">◀ Previous</button><button id="debugNext">Next program ▶</button><button id="debugJump">Jump +5 min</button><button id="debugExit">Return to Live</button></div><label>Jump to a scheduled program<select id="debugPrograms"></select></label><button id="debugSelect">Preview chosen program</button><div id="debugInfo" class="hint"></div></section></div></div></section>
+<section class="guide"><div class="guideheading"><h2>TV LISTINGS</h2><div class="guideheadright"><button id="earlier">◀ 30m</button><button id="now">NOW</button><button id="later">30m ▶</button><select id="filter"><option value="">All Categories</option></select></div></div><div class="infobar" id="infobar">Loading channels…</div><div class="gridscroll"><div class="gridbody"><div class="timehead"><div class="l">CH • STATION</div><div class="times" id="times"></div></div><div id="rows"></div></div></div><div class="footer"><span>Live TV guide • Yellow line = current time • Program cells tune to the channel, not to future videos</span><span><kbd>↑</kbd><kbd>↓</kbd> Change channel</span></div></section></main>
+
+<dialog id="loginDialog"><h2>Admin Options</h2><form class="form" id="loginForm"><div class="hint">Local development PIN. This is not secure authentication for a published site.</div><label>Admin PIN<input id="password" type="password" inputmode="numeric" required placeholder="4 digits"></label><p id="loginError" class="notice"></p><div class="buttons"><button type="button" data-close="loginDialog">Cancel</button><button type="submit">Unlock</button></div></form></dialog>
+<dialog id="adminDialog" class="admin-dialog"><h2>ADMIN OPTIONS <small style="font-weight:normal;font-size:12px;color:#d2e6fa">YouTube Guide • v1.0.8</small></h2>
+<div class="admin-layout">
+<section class="admin-section"><div class="admin-section-title"><span class="admin-number">01</span><div><h3>Channels</h3><p>Create and manage the programming on your guide.</p></div></div>
+<div class="admin-section-body"><button id="create" class="primary-wide">＋ Create Channel</button>
+<label>Selected channel<select id="manageChannel"></select></label>
+<div class="admin-actions"><button id="edit">✎ Edit Channel</button><button id="extend">Find More Videos</button><button id="remove" class="danger">Delete Channel</button></div>
+<div class="schedule-help"><b>Three-day TV schedule</b><p>Every channel repeats its programming over a synchronized 72-hour rotation. New programs are staged for the next rotation, not added in the middle of a broadcast. Discovery failures simply leave the previous programming in place.</p></div>
+<div id="adminMessage" class="notice" role="status"></div></div></section>
+<section class="admin-section"><div class="admin-section-title"><span class="admin-number">02</span><div><h3>YouTube Discovery</h3><p>Only needed while creating or editing channels locally.</p></div></div>
+<div class="admin-section-body"><label>YouTube Data API v3 key<input id="apiKey" type="password" placeholder="Paste your personal API key"></label><div class="admin-actions"><button id="saveKey">Save API Key</button></div><div class="hint">Do not publish this key inside your website files. A future scheduled GitHub workflow will read it from GitHub Secrets.</div></div></section>
+<section class="admin-section"><div class="admin-section-title"><span class="admin-number">03</span><div><h3>GitHub Publishing</h3><p>Optional while developing locally. Sync changes globally after publication.</p></div></div>
+<div class="admin-section-body"><div class="split"><label>GitHub owner<input id="ghOwner" placeholder="your-username"></label><label>Repository<input id="ghRepo" placeholder="youtube-guide"></label></div><label>Branch<input id="ghBranch" value="main"></label><label>GitHub token (this browser session only)<input id="ghToken" type="password" placeholder="github_pat_..."></label>
+<div class="admin-actions"><button id="saveGitHub">Save Connection</button><button id="pullGitHub">Load Published Channels</button><button id="publishGitHub">Publish Globally</button></div>
+<div id="githubMessage" class="github-feedback hint" role="status"></div><div class="hint">When hosted on GitHub, the included workflow can refresh up to 90 recommendation channels per day. All viewers load the same public channels.json file.</div></div></section>
+<section class="admin-section"><div class="admin-section-title"><span class="admin-number">04</span><div><h3>Testing &amp; Access</h3><p>Debug playback is local and never changes the live broadcast.</p></div></div><div class="admin-section-body"><div class="admin-actions"><button id="debugToggle" type="button">Enable Debug Mode</button><button id="logout">Lock Admin</button><button data-close="adminDialog">Close</button></div></div></section>
+</div></dialog>
+<dialog id="createDialog"><h2 id="editorTitle">CREATE CHANNEL</h2><form class="form" id="createForm">
+<div class="split"><label>Channel name<input id="name" required placeholder="Ben 10 Universe"></label><label>Channel number<input id="number" required type="number" min="1" max="9999" placeholder="101"></label></div>
+<label>Category<input id="category" value="Animation" required></label>
+<div class="channel-type-heading">CHOOSE HOW YOUR CHANNEL GETS ITS VIDEOS</div>
+<div class="mode-cards" id="modeCards">
+<button type="button" class="mode-card active" data-mode="seeds"><strong>★ AI Custom Feed</strong><span>Describe the videos you want; AI discovers and curates new programming automatically.</span></button>
+<button type="button" class="mode-card" data-mode="creatorMulti"><strong>▶ YouTube Creator(s)</strong><span>Show videos uploaded by one or several creators.</span></button>
+<button type="button" class="mode-card" data-mode="playlist"><strong>☷ One Playlist</strong><span>Broadcast one YouTube playlist on a looping schedule.</span></button>
+<button type="button" class="mode-card" data-mode="multi"><strong>▤ Multiple Playlists</strong><span>Combine several playlists into a single channel.</span></button>
+</div>
+<select id="mode" class="hidden" aria-label="Channel source"><option value="seeds">Recommendations</option><option value="creatorMulti">Creators</option><option value="playlist">Playlist</option><option value="multi">Multiple playlists</option></select>
+<div id="seedField" class="seed-studio">
+<div class="seed-title">CREATE YOUR OWN AI FEED <span>Describe your channel in plain English. Example videos are optional. Each feed stays independent.</span></div>
+<label><b>What videos should this channel show?</b><textarea id="youtubeFeedPrompt" placeholder="Thoughtful videos about Ben 10: character analyses, aliens, Omnitrix lore, and fan theories. Avoid full episodes and gameplay."></textarea></label>
+<div class="hint">Be specific about the topic, style, creators, and anything to exclude. The engine uses this prompt to find and semantically rank videos. You can create a feed without any video links.</div>
+<label>Optional example video links (one per line)<textarea id="seedLinks" placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea></label>
+<div class="companion-panel">
+<strong>Optional: teach your feed using YouTube examples</strong>
+<p>You can optionally import examples from a real YouTube Custom Feed. The guide does not require a saved YouTube feed, a browser extension, or YouTube Premium.</p>
+<label>Saved feed name<input id="feedName" placeholder="Ben 10 Universe (same name in extension)"></label>
+
+<div class="companion-actions"><button type="button" id="openYouTubeCreator" class="preview-action">Optional: Open YouTube Custom Feed</button></div>
+<div class="companion-actions"><button type="button" id="captureYouTubeFeed" class="preview-action">Capture + scroll open YouTube feed</button><button type="button" id="syncYouTubeFeed">Import captured YouTube feed</button></div>
+<small>Requires the included Feed Companion extension. If unavailable, import a JSON file or paste links instead.</small>
+</div>
+<label>Or import a feed from the Companion browser extension<input id="seedFile" type="file" accept=".json,application/json"></label>
+<div class="hint">Your prompt and optional examples teach the independent AI feed engine. The guide checks for more matching videos after publication. Every 3 days it builds a fresh order and mixes new discoveries with reruns. This approximates Custom Feed curation; it cannot reproduce YouTube’s private recommendation algorithm.</div>
+<div id="seedStatus" class="seed-feedback" role="status">No feed imported yet.</div>
+<label class="checkline"><input id="includeSeeds" type="checkbox" checked> Include example videos in broadcast programming</label>
+<input id="approximateDiscovery" type="checkbox" checked class="hidden" aria-hidden="true">
+<label>Recommendation focus<select id="seedStrictness"><option value="strict">Focused — match the example topics closely</option><option value="balanced">Balanced — include related subjects</option></select></label>
+<label>Exclude subjects (optional)<input id="seedExclude" placeholder="gameplay, full episodes, reactions"></label>
+<button type="button" id="previewSeeds" class="preview-action">✦ Preview AI feed recommendations</button>
+<div id="seedProgress" class="hint" role="status"></div>
+<div id="seedReview" class="review-panel hidden"><div class="review-title"><strong>Suggested programming</strong><span id="seedReviewCount"></span></div><div id="seedReviewItems" class="review-items"></div></div>
+</div>
+<label id="creatorsField" class="hidden">YouTube creator @handles / URLs (one per line)<textarea id="sourceCreators" placeholder="@TheInkTank&#10;@CartoonNetwork"></textarea></label>
+<span id="promptField" class="hidden"><textarea id="prompt" aria-hidden="true"></textarea></span>
+<div id="recommendControls" class="recommend-controls hidden" aria-hidden="true"><label>Required topic<input id="topic"></label><label>Exclude subjects<input id="exclude"></label><label>Strictness<select id="strictness"><option value="strict">Focused</option><option value="balanced">Balanced</option></select></label><button type="button" id="previewRecommendations" class="preview-action">Review legacy recommendations</button><div id="previewStatus"></div><div id="reviewPanel" class="review-panel hidden"><div class="review-title"><strong>Review videos</strong><span id="reviewCount"></span></div><div id="reviewItems" class="review-items"></div></div></div>
+<span id="creatorField" class="hidden"><input id="sourceChannel" aria-hidden="true"></span>
+<label id="playlistField" class="hidden">Public playlist URL(s), one per line<textarea id="playlists" placeholder="https://www.youtube.com/playlist?list=..."></textarea></label>
+<label>Program order<select id="order"><option value="shuffle">Shuffle</option><option value="ordered">In source order</option></select></label>
+<div class="hint">Every channel uses a 3-day synchronized schedule. If no new videos are found, previous programs repeat. All modes keep synchronized live-TV scheduling. The editor filters Shorts-length videos, livestreams and videos marked as not embeddable. Embed playback can still be blocked by YouTube.</div>
+<div id="createError" class="notice" role="status"></div><div class="buttons"><button type="button" data-close="createDialog">Cancel</button><button type="submit" id="submitChannel">Create &amp; Save Channel</button></div></form></dialog>
+<script src="app.js?v=108-ai-custom-feed" defer></script></body></html>

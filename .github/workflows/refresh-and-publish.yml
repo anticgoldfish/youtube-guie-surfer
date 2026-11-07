@@ -1,0 +1,72 @@
+name: Refresh YouTube Guide and Publish
+
+on:
+  schedule:
+    # Every 30 minutes, shifted away from minute 00 to reduce congestion.
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: 'Refresh all channels for testing (can use substantial YouTube quota)'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'YouTube-Guide/**'
+      - 'scripts/**'
+      - '.github/workflows/refresh-and-publish.yml'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: youtube-guide-refresh
+  cancel-in-progress: false
+
+jobs:
+  update_and_deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install optional relevance scoring
+        run: pip install fastembed || echo 'Optional semantic engine unavailable; keyword ranking will be used.'
+      - name: Cache optional semantic model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/fastembed
+          key: youtube-guide-embedding-bge-small-v1
+      - name: Refresh staggered channels and stage 100-hour schedules
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          FEED_EMBEDDINGS: '1'
+          FORCE_CHANNEL_REFRESH: ${{ inputs.force_refresh && '1' || '0' }}
+        run: python scripts/update_channels.py
+      - name: Commit shared channel programming
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add YouTube-Guide/channels.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh staggered channel programming [skip ci]"
+            # Another admin update may land during the job; rebase our data commit.
+            git pull --rebase origin "$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./YouTube-Guide
+      - id: deployment
+        uses: actions/deploy-pages@v4
