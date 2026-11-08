@@ -1,9 +1,18 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const escapeHtml=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
-const STORE='youtube-guide-v07-channels',KEY='youtube-guide-v07-api',GITHUB='youtube-guide-v07-github';
-let channels=[],chosen=null,guideStart=0,editing=null,admin=false,debugActive=false,debugOverride=null,seedImported=[],seedPreview=null,apiKey=localStorage.getItem(KEY)||'',github=JSON.parse(localStorage.getItem(GITHUB)||'{}');
-let token=sessionStorage.getItem('youtube-guide-github-token')||'',player=null,iframeReady=false,playerReady=false,loadedId='',loadedChannel='',wanted=null,paused=false,pauseAt=0,delay=0,sound=true,errors=new Set(),lastInteraction=0;
+const STORE='youtube-guide-v07-channels',KEY='youtube-guide-v07-api',GITHUB='youtube-guide-v07-github',DRAFT='youtube-guide-pending-global-save';
+const EMBEDDED_SETTINGS=window.YOUTUBE_GUIDE_SETTINGS||{};
+let channels=[],chosen=null,guideStart=0,editing=null,admin=false,seedImported=[],seedPreview=null,apiKey=EMBEDDED_SETTINGS.youtubeApiKey||localStorage.getItem(KEY)||'',github=EMBEDDED_SETTINGS.owner&&EMBEDDED_SETTINGS.repo?{owner:EMBEDDED_SETTINGS.owner,repo:EMBEDDED_SETTINGS.repo,branch:EMBEDDED_SETTINGS.branch||'main'}:JSON.parse(localStorage.getItem(GITHUB)||'{}');
+// Embedded settings are supplied by index.html; public source exposes the configured credentials.
+function autoDetectRepository(){
+ const match=location.hostname.match(/^([a-z0-9-]+)\.github\.io$/i);
+ if(!match)return;
+ const repo=decodeURIComponent(location.pathname.split('/').filter(Boolean)[0]||'');
+ if(repo&&!github.owner&&!github.repo){github={owner:match[1],repo,branch:'main'};localStorage.setItem(GITHUB,JSON.stringify(github));}
+}
+autoDetectRepository();
+let token=EMBEDDED_SETTINGS.githubToken||sessionStorage.getItem('youtube-guide-github-token')||'',player=null,iframeReady=false,playerReady=false,loadedId='',loadedChannel='',wanted=null,paused=false,pauseAt=0,delay=0,sound=true,errors=new Set(),lastInteraction=0;
 const now=()=>Date.now(),time=t=>new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 const selected=()=>channels.find(c=>c.id===chosen);
 const ordered=()=>channels.filter(c=>!$('filter').value||c.category===$('filter').value).sort((a,b)=>a.number-b.number);
@@ -31,6 +40,8 @@ function cycleVideos(c,t){
 }
 function channelStatus(c,t=now()){const block=cycleStart(c,t);const list=cycleVideos(c,t)||[];return {cycleStart:block,nextCycle:block+CYCLE_MS,programs:list.length,hasPending:!!(c.pendingVideos?.length&&c.activateAt>t)}}
 function saveLocal(){localStorage.setItem(STORE,JSON.stringify(channels));draw();}
+let unpublishedDraft=typeof localStorage!=='undefined'&&localStorage.getItem(DRAFT)==='1';
+function draftState(value){unpublishedDraft=!!value;if(value)localStorage.setItem(DRAFT,'1');else localStorage.removeItem(DRAFT);}
 function say(v){$('message').textContent=v;}
 function overlay(title,detail,show=true){$('overlay').classList.remove('hidden');$('overlayTitle').textContent=title;$('overlayDesc').textContent=detail;$('playNow').classList.toggle('hidden',!show);}
 function hideOverlay(){$('overlay').classList.add('hidden')}
@@ -84,32 +95,21 @@ function at(c,t){
 function draw(){const prev=$('filter').value;const cats=[...new Set(channels.map(c=>c.category))].sort();$('filter').innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');$('filter').value=cats.includes(prev)?prev:'';
  const current=$('manageChannel').value;$('manageChannel').innerHTML=channels.sort((a,b)=>a.number-b.number).map(c=>`<option value="${escapeHtml(c.id)}">${c.number} — ${escapeHtml(c.name)}</option>`).join('');if(channels.some(c=>c.id===current))$('manageChannel').value=current;
  if(!selected())chosen=channels[0]?.id||null;guide();info();}
-function guide(){let arr=ordered(),t=now(),span=150*60000;$('times').innerHTML=Array.from({length:5},(_,i)=>`<div>${time(guideStart+i*1800000)}</div>`).join('');$('infobar').textContent=arr.length?`${arr.length} channels • ${time(t)} • fixed shared clock • ${token?'GitHub connected':'local development'}`:'No channels yet. Admin Options → Create Channel to begin.';
+function guide(){let arr=ordered(),t=now(),span=150*60000;$('times').innerHTML=Array.from({length:5},(_,i)=>`<div>${time(guideStart+i*1800000)}</div>`).join('');$('infobar').textContent=arr.length?`${arr.length} channels • ${time(t)} • fixed shared clock • ${github.owner&&github.repo?'Global channel library':'Local preview'}`:'No channels yet. Admin Options → Create Channel to begin.';
  $('rows').innerHTML=arr.map(c=>{let html='',cursor=guideStart,guard=0;while(cursor<guideStart+span&&guard++<180){const p=at(c,cursor+100);if(!p)break;let end=Math.min(guideStart+span,p.end);if(end<=cursor){cursor+=1000;continue}let left=100*(cursor-guideStart)/span,w=100*(end-cursor)/span;html+=`<button class="program ${p.start<=t&&p.end>t?'current':''}" title="${escapeHtml(p.video.title)}" data-tune="${escapeHtml(c.id)}" style="left:${left}%;width:${w}%"><strong>${escapeHtml(p.video.title)}</strong><small>${escapeHtml(p.video.creator||c.name)} • ${time(p.start)}</small></button>`;cursor=end+50;}let marker=(t-guideStart)/span*100;if(marker>=0&&marker<=100)html+=`<div class="marker" style="left:${marker}%"></div>`;return `<div class="line"><div class="station ${c.id===chosen?'selected':''}" data-tune="${escapeHtml(c.id)}"><b>${c.number}</b><span>${escapeHtml(c.name)}<small>${escapeHtml(c.category)} · ${c.videos.length} programs · new 3-day lineup each cycle</small></span></div><div class="programs">${html}</div></div>`}).join('');}
 function info(){let c=selected(),p=c&&at(c,now());$('channelLabel').textContent=c?`CHANNEL ${c.number} • ${c.name}`:'NO CHANNEL SELECTED';$('programLabel').textContent=p?.video.title||'Choose a channel';$('details').textContent=p?`${p.video.creator||c.category} • ${time(p.start)} – ${time(p.end)} • ${['prompt','similar','seeds'].includes(c.mode)?'Recommendation channel':c.mode==='creator'?'Creator channel':'Playlist channel'}`:'No playable programs are available yet. Create or update this channel in Admin Options.';}
-function tune(id){if(!channels.some(c=>c.id===id))return;debugOverride=null;chosen=id;if(debugActive)updateDebugPrograms();paused=false;delay=0;loadedId='';errors.clear();draw();if(playerReady)sync(true);else overlay('Channel '+selected().number,'Click WATCH LIVE to join the broadcast at its current point.',true)}
+function tune(id){if(!channels.some(c=>c.id===id))return;chosen=id;paused=false;delay=0;loadedId='';errors.clear();draw();if(playerReady)sync(true);else overlay('Channel '+selected().number,'Click WATCH LIVE to join the broadcast at its current point.',true)}
 function makePlayer(){if(!iframeReady||player)return;player=new YT.Player('player',{width:'100%',height:'100%',playerVars:{playsinline:1,autoplay:0,controls:0,disablekb:1,fs:0,rel:0,origin:location.protocol.startsWith('http')?location.origin:undefined},events:{onReady:()=>{playerReady=true;try{player.setVolume(85);player.unMute()}catch{}if(wanted)loadWanted()},onStateChange:e=>{if(e.data===YT.PlayerState.PLAYING){if(paused){player.pauseVideo();return}hideOverlay();say('Playing live schedule • rewind and pause available; no skipping ahead.') }if(e.data===YT.PlayerState.ENDED&&!paused)sync(true)},onError:e=>{let reason=({2:'Invalid video',5:'HTML5 player error',100:'Video removed or private',101:'Uploader blocked embedding',150:'Uploader blocked embedding',153:'Embedded playback rejected'})[e.data]||'Video unavailable';errors.add(loadedId);overlay('This program cannot play',reason+'. The schedule remains unchanged. Try another channel or wait for the next program.',false);say(reason)}}})}
 function loadWanted(){if(!playerReady||!wanted)return;let w=wanted;wanted=null;loadedId=w.id;loadedChannel=w.channel;try{player.loadVideoById({videoId:w.id,startSeconds:Math.max(0,Math.floor(w.offset))});player.setVolume(85);if(sound)player.unMute();else player.mute();hideOverlay()}catch(e){overlay('Could not tune channel',e.message,true)}}
-function sync(force=false){let c=selected(),p=c&&(debugActive&&debugOverride?debugAt(c):at(c,now()-delay));if(!p){overlay('No programs available','This channel does not yet have eligible videos.',false);return}if(!playerReady){wanted={id:p.video.id,offset:p.offset,channel:c.id};makePlayer();return}if(errors.has(p.video.id)){overlay('Program unavailable','YouTube has blocked this embed. The broadcast schedule will continue to the next program.',false);return}if(force||loadedId!==p.video.id||loadedChannel!==c.id){wanted={id:p.video.id,offset:p.offset,channel:c.id};loadWanted();return}if(paused)return;let current=player.getCurrentTime?.()||0;if(!debugActive&&current>p.offset+2){player.seekTo(Math.max(0,p.offset-.5),true);say('Skipping ahead of live is disabled.')}else if(!debugActive&&current<p.offset-35&&delay===0){player.seekTo(Math.max(0,p.offset-1),true)}}
+function sync(force=false){let c=selected(),p=c&&at(c,now()-delay);if(!p){overlay('No programs available','This channel does not yet have eligible videos.',false);return}if(!playerReady){wanted={id:p.video.id,offset:p.offset,channel:c.id};makePlayer();return}if(errors.has(p.video.id)){overlay('Program unavailable','YouTube has blocked this embed. The broadcast schedule will continue to the next program.',false);return}if(force||loadedId!==p.video.id||loadedChannel!==c.id){wanted={id:p.video.id,offset:p.offset,channel:c.id};loadWanted();return}if(paused)return;let current=player.getCurrentTime?.()||0;if(current>p.offset+2){player.seekTo(Math.max(0,p.offset-.5),true);say('Skipping ahead of live is disabled.')}else if(current<p.offset-35&&delay===0){player.seekTo(Math.max(0,p.offset-1),true)}}
 $('playNow').onclick=()=>{if(!chosen)return;paused=false;delay=0;lastInteraction=now();if(!iframeReady){overlay('Loading YouTube','The YouTube player is still loading. Check your internet connection and browser extensions.',true);return}makePlayer();if(playerReady){sync(true);try{player.unMute();player.setVolume(85);player.playVideo()}catch{}}else overlay('Loading player','YouTube is initializing. Click WATCH LIVE again if playback does not start.',true)};
 $('pause').onclick=()=>{if(!playerReady||!chosen)return;if(!paused){paused=true;pauseAt=now();player.pauseVideo();$('pause').textContent='▶ RESUME';say('Paused locally; the channel clock keeps running.')}else{delay+=now()-pauseAt;paused=false;player.playVideo();$('pause').textContent='❚❚ PAUSE';say('Resumed behind the live broadcast.')}};
 $('back').onclick=()=>{if(!playerReady||!selected())return;let p=at(selected(),now()-delay);if(!p||loadedId!==p.video.id)return;let cur=player.getCurrentTime?.()||0,next=Math.max(0,Math.min(cur,p.offset)-10);player.seekTo(next,true);delay=Math.max(0,now()-(p.start+next*1000));if(paused)pauseAt=now();say('Rewound 10 seconds.');};
 $('live').onclick=()=>{paused=false;delay=0;$('pause').textContent='❚❚ PAUSE';sync(true)};
 $('sound').onclick=()=>{sound=!sound;$('sound').textContent=sound?'🔊 Sound On':'🔇 Sound Off';if(playerReady){if(sound){player.setVolume(85);player.unMute()}else player.mute()}say(sound?'Sound enabled. Check device and tab volume if silent.':'Sound muted.')};
-function debugAt(c){if(!debugOverride||!c?.videos?.length)return at(c,now());let i=Math.max(0,Math.min(c.videos.length-1,debugOverride.index));let v=c.videos[i];let elapsed=Math.max(0,(now()-debugOverride.since)/1000),offset=debugOverride.offset+elapsed;if(offset>=v.duration){debugOverride={index:(i+1)%c.videos.length,offset:0,since:now()};return debugAt(c)}return {video:v,offset,start:now()-offset*1000,end:now()+(v.duration-offset)*1000}}
-function debugIndex(i,offset=0){let c=selected();if(!c?.videos?.length)return;debugActive=true;debugOverride={index:(i+c.videos.length)%c.videos.length,offset:Math.max(0,offset),since:now()};loadedId='';refreshDebugInfo();sync(true)}
-function refreshDebugInfo(){let c=selected(),p=c&&debugAt(c);if(!p)return;$('channelLabel').textContent=`DEBUG PREVIEW • CHANNEL ${c.number}`;$('programLabel').textContent=p.video.title;$('details').textContent=`Previewing ${p.video.creator||'video'} • Not changing live schedule`;$('debugInfo').textContent=`Previewing ${c.videos.findIndex(v=>v===p.video)+1} / ${c.videos.length} — ${Math.floor(p.offset/60)}:${String(Math.floor(p.offset%60)).padStart(2,'0')} into video`}
-function updateDebugPrograms(){let c=selected();$('debugPrograms').innerHTML=(c?.videos||[]).map((v,i)=>`<option value="${i}">${i+1}. ${escapeHtml(v.title.slice(0,75))}</option>`).join('')}
-$('debugToggle').onclick=()=>{if(!admin)return;debugActive=!debugActive;debugOverride=null;$('debugPanel').classList.toggle('hidden',!debugActive);$('debugToggle').textContent=debugActive?'Disable Debug Mode':'Enable Debug Mode';updateDebugPrograms();$('adminDialog').close();sync(true)};
-$('debugExit').onclick=()=>{debugOverride=null;debugActive=false;$('debugPanel').classList.add('hidden');$('debugToggle').textContent='Enable Debug Mode';delay=0;sync(true)};
-$('debugPrev').onclick=()=>{let c=selected();if(!c)return;let i=debugOverride?.index??c.videos.findIndex(v=>v.id===at(c,now())?.video.id);debugIndex(i-1)};
-$('debugNext').onclick=()=>{let c=selected();if(!c)return;let i=debugOverride?.index??c.videos.findIndex(v=>v.id===at(c,now())?.video.id);debugIndex(i+1)};
-$('debugJump').onclick=()=>{let c=selected();if(!c)return;let p=debugOverride?debugAt(c):at(c,now());let i=debugOverride?.index??c.videos.findIndex(v=>v.id===p?.video.id);debugIndex(i,(p?.offset||0)+300)};
-$('debugSelect').onclick=()=>debugIndex(Number($('debugPrograms').value)||0);
-function surf(n){let a=ordered(),i=a.findIndex(c=>c.id===chosen);if(a.length)tune(a[(i+n+a.length)%a.length].id)}$('previous').onclick=()=>surf(-1);$('next').onclick=()=>surf(1);
-$('rows').onclick=e=>{let b=e.target.closest('[data-tune]');if(b)tune(b.dataset.tune)};$('earlier').onclick=()=>{guideStart-=1800000;guide()};$('later').onclick=()=>{guideStart+=1800000;guide()};$('now').onclick=()=>{guideStart=Math.floor(now()/1800000)*1800000;guide()};$('filter').onchange=guide;
+$('rows').onclick=e=>{let b=e.target.closest('[data-tune]');if(b)tune(b.dataset.tune)};$('earlier').onclick=()=>{guideStart-=1800000;guide()};$('back60').onclick=()=>{guideStart-=3600000;guide()};$('back120').onclick=()=>{guideStart-=7200000;guide()};$('later').onclick=()=>{guideStart+=1800000;guide()};$('forward60').onclick=()=>{guideStart+=3600000;guide()};$('forward120').onclick=()=>{guideStart+=7200000;guide()};$('now').onclick=()=>{guideStart=Math.floor(now()/1800000)*1800000;guide()};$('filter').onchange=guide;
 window.addEventListener('keydown',e=>{if(document.querySelector('dialog[open]')||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))return;if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();surf(e.key==='ArrowDown'?1:-1)}});
-function tick(){$('clock').textContent=time(now());if(debugActive&&debugOverride)refreshDebugInfo();else info();if(playerReady&&selected()&&!paused&&loadedId)sync(false)}
+function tick(){$('clock').textContent=time(now());info();if(playerReady&&selected()&&!paused&&loadedId)sync(false)}
 window.onYouTubeIframeAPIReady=()=>{iframeReady=true;makePlayer()};let yt=document.createElement('script');yt.src='https://www.youtube.com/iframe_api';yt.async=true;document.head.appendChild(yt);
 // YouTube Data API v3, directly from this browser. Keys in browser storage are NOT secret on a published site.
 async function youtube(route,params={}){if(!apiKey)throw Error('Add your YouTube Data API v3 key in Admin Options first.');let url=new URL('https://www.googleapis.com/youtube/v3/'+route);for(let [k,v] of Object.entries({...params,key:apiKey}))url.searchParams.set(k,String(v));let r=await fetch(url);let data=await r.json();if(!r.ok){let msg=data.error?.message||'YouTube API error '+r.status;if(r.status===403&&/quota/i.test(msg))msg+=' Your daily YouTube API quota may be exhausted; try again after reset.';throw Error(msg)}return data}
@@ -287,18 +287,6 @@ async function invokeCompanion(type,steps=0){
    if(type==='YTG_CAPTURE_FEED')$('seedStatus').textContent+=` Captured ${d.scanned} cards, including ${d.added} new videos. ${d.scanned===0?'Check that your Custom Feed is selected on YouTube.':''}`;
  }catch(err){$('seedStatus').textContent='Feed Companion: '+err.message}finally{button.disabled=false}
 }
-$('openYouTubeCreator').onclick=async()=>{
- const button=$('openYouTubeCreator'),feedName=$('feedName').value.trim()||$('name').value.trim()||'My Custom Feed';
- const prompt=$('youtubeFeedPrompt').value.trim();
- if(!prompt){$('seedStatus').textContent='Enter the prompt you want YouTube itself to use for its Custom Feed.';return}
- button.disabled=true;$('seedStatus').textContent='Opening YouTube’s real Custom Feed creator…';
- try{await companionRequest('YTG_OPEN_CUSTOM_FEED',{feedName,prompt});$('seedStatus').textContent='YouTube opened. Create the Custom Feed in your signed-in YouTube account, then use the extension helper to capture it. Return here and choose Import captured YouTube feed.'}
- catch(e){$('seedStatus').textContent='Companion: '+e.message}
- finally{button.disabled=false}
-};
-$('captureYouTubeFeed').onclick=()=>invokeCompanion('YTG_CAPTURE_FEED',8);
-$('syncYouTubeFeed').onclick=()=>invokeCompanion('YTG_GET_FEED');
-
 // A Guide-owned, prompt-driven feed. Does not query YouTube's private
 // Custom Feeds service. Prompt + (optional) examples jointly define relevance.
 function representativeSearches(seeds,prompt=''){
@@ -408,13 +396,20 @@ function validate(c){if(!c.name||!c.category||!Number.isInteger(c.number)||c.num
 const closeDialogs=()=>document.querySelectorAll('dialog[open]').forEach(d=>d.close());document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 $('adminOpen').onclick=()=>{(admin?$('adminDialog'):$('loginDialog')).showModal()};
 $('loginForm').onsubmit=e=>{e.preventDefault();if($('password').value!=='1234'){$('loginError').textContent='Incorrect PIN.';return}admin=true;$('password').value='';$('loginError').textContent='';$('loginDialog').close();$('adminDialog').showModal()};
-$('logout').onclick=()=>{admin=false;debugActive=false;debugOverride=null;$('debugPanel').classList.add('hidden');$('adminDialog').close()};
-$('saveKey').onclick=()=>{apiKey=$('apiKey').value.trim();if(!apiKey){$('adminMessage').textContent='Please enter a key.';return}localStorage.setItem(KEY,apiKey);$('apiKey').value='';$('adminMessage').textContent='YouTube API key saved in this browser.'};
+$('logout').onclick=()=>{admin=false;$('adminDialog').close()};
+$('saveKey').onclick=()=>{apiKey=$('apiKey').value.trim()||EMBEDDED_SETTINGS.youtubeApiKey||'';if(!apiKey){$('adminMessage').textContent='Please enter a key.';return}localStorage.setItem(KEY,apiKey);$('apiKey').value='';$('adminMessage').textContent='YouTube API key saved in this browser.'};
 function modeFields(){let mode=$('mode').value;document.querySelectorAll('.mode-card').forEach(b=>{let active=b.dataset.mode===mode;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});$('seedField').classList.toggle('hidden',mode!=='seeds');$('creatorsField').classList.toggle('hidden',mode!=='creatorMulti');$('promptField').classList.toggle('hidden',!['prompt','similar'].includes(mode));$('creatorField').classList.toggle('hidden',!['creator','similar'].includes(mode));$('playlistField').classList.toggle('hidden',!['playlist','multi'].includes(mode));$('recommendControls').classList.toggle('hidden',!['prompt','similar'].includes(mode))}
 function openEditor(c=null){editing=c?.id||null;$('editorTitle').textContent=c?'EDIT CHANNEL':'CREATE CHANNEL';$('name').value=c?.name||'';$('number').value=c?.number||Math.max(101,...channels.map(x=>x.number+1));$('category').value=c?.category||'Animation';let editorMode=['seeds','creatorMulti','playlist','multi'].includes(c?.mode)?c.mode:'seeds';$('mode').value=editorMode;seedImported=(c?.seedIds?.length?c.seedIds:(c&&editorMode==='seeds'?(c.videos||[]).map(v=>v.id):[])).map(id=>({id}));$('seedLinks').value='';$('seedFile').value='';$('youtubeFeedPrompt').value=c?.feedPrompt||c?.youtubeFeedPrompt||'';$('approximateDiscovery').checked=true;$('feedName').value=c?.feedName||c?.name||'';$('seedExclude').value=c?.seedExclude||'';$('seedStrictness').value=c?.seedStrictness||'strict';$('includeSeeds').checked=c?c.includeSeeds!==false:true;$('sourceCreators').value=(c?.sourceCreators||[]).join('\n');seedPreview=null;renderSeedPreview([]);updateSeedStatus();$('prompt').value=c?.prompt||'';$('topic').value=c?.topic||'';$('exclude').value=c?.exclude||'';$('strictness').value=c?.strictness||'strict';previewCache=null;renderPreview([]);$('sourceChannel').value=c?.sourceChannel||'';$('playlists').value=(c?.playlists||[]).join('\n');$('order').value=c?.order||'shuffle';$('submitChannel').textContent=c?'Save Changes':'Generate & Save Channel';$('createError').textContent='';modeFields();$('adminDialog').close();$('createDialog').showModal()}
 $('create').onclick=()=>openEditor();$('edit').onclick=()=>{let c=channels.find(x=>x.id===$('manageChannel').value);if(c)openEditor(c)};$('mode').onchange=modeFields;document.querySelectorAll('.mode-card').forEach(b=>b.addEventListener('click',()=>{$('mode').value=b.dataset.mode;modeFields();seedPreview=null;renderSeedPreview([])}));
 for(let id of ['prompt','topic','exclude','strictness','sourceChannel','mode'])$(id).addEventListener('input',()=>{if(previewCache){previewCache=null;renderPreview([]);$('previewStatus').textContent='Settings changed. Run Analyze & Review again to use the new settings.'}});
-async function autoPublish(){if(!github.owner||!github.repo||!token)return;try{await publish();$('adminMessage').textContent+=' Published to GitHub.'}catch(e){$('adminMessage').textContent+=' Local save succeeded. GitHub publishing failed: '+e.message}}
+async function autoPublish(change){
+ if(!github.owner||!github.repo||!token){
+  $('adminMessage').textContent+=' Saved locally only — connect GitHub in Admin Options to make it global.';
+  return false;
+ }
+ try{await publish(change);draftState(false);$('adminMessage').textContent+=' Published globally to GitHub.';return true}
+ catch(e){$('adminMessage').textContent+=' NOT published globally: '+e.message;return false}
+}
 
 let previewCache=null;
 function renderPreview(items){let panel=$('reviewPanel'),list=$('reviewItems');panel.classList.toggle('hidden',!items.length);if(!items.length){list.innerHTML='';$('previewStatus').textContent='';return}
@@ -426,33 +421,86 @@ $('previewRecommendations').onclick=async()=>{let b=$('previewRecommendations'),
  }catch(e){previewCache=null;renderPreview([]);$('previewStatus').textContent=e.message}finally{b.disabled=false}}
 
 $('createForm').onsubmit=async e=>{e.preventDefault();let b=$('submitChannel');b.disabled=true;$('createError').textContent='';let value=formData();try{validate(value);let original=channels.find(x=>x.id===editing),same=original&&original.mode===value.mode&&original.prompt===value.prompt&&original.sourceChannel===value.sourceChannel&&JSON.stringify(original.playlists)===JSON.stringify(value.playlists)&&original.order===value.order&&original.topic===value.topic&&original.exclude===value.exclude&&original.strictness===value.strictness&&JSON.stringify(original.seedIds||[])===JSON.stringify(value.seedIds||[])&&JSON.stringify(original.sourceCreators||[])===JSON.stringify(value.sourceCreators||[])&&original.feedPrompt===value.feedPrompt&&original.youtubeFeedPrompt===value.youtubeFeedPrompt&&original.feedName===value.feedName&&original.seedStrictness===value.seedStrictness&&original.seedExclude===value.seedExclude&&original.includeSeeds===value.includeSeeds;let signature=JSON.stringify(value),items=same?original.videos:value.mode==='seeds'&&seedPreview?.signature===seedPreviewSignature()?[...(value.includeSeeds?seedPreview.seeds:[]),...seedPreview.suggestions.filter(v=>!seedPreview.rejected.has(v.id))]:previewCache?.signature===signature?previewCache.videos.filter(v=>!previewCache.rejected.has(v.id)):await generate(value,msg=>$('createError').textContent=msg);if(!items.length)throw Error('No eligible programs found. Try a more specific feed description, or import example videos.');let c={...value,id:editing||'ch_'+crypto.randomUUID(),anchor:same?original.anchor:now(),rejectedIds:[...new Set([...(original?.rejectedIds||[]),...(seedPreview?.signature===seedPreviewSignature()?[...seedPreview.rejected]:[])])],videos:items,pendingVideos:same?original.pendingVideos:undefined,activateAt:same?original.activateAt:undefined};if(!same){c.schedule=makeSchedule(c,now());}else{c.schedule=original.schedule;c.nextSchedule=original.nextSchedule;c.lastRefreshAt=original.lastRefreshAt;}
-channels=editing?channels.map(x=>x.id===editing?c:x):[...channels,c];saveLocal();$('createDialog').close();chosen=c.id;tune(c.id);$('adminMessage').textContent=`Saved ${items.length} programs to ${c.name}.`;await autoPublish();}catch(err){$('createError').textContent=err.message}finally{b.disabled=false;b.textContent=editing?'Save Changes':'Generate & Save Channel'}};
-$('extend').onclick=async()=>{let c=channels.find(x=>x.id===$('manageChannel').value);if(!c)return;let btn=$('extend');btn.disabled=true;$('adminMessage').textContent='Finding eligible videos…';try{let videos=[];if(c.mode==='seeds'){let r=await recommendFromSeeds(c,{existing:c.videos,status:s=>$('adminMessage').textContent=s});videos=r.suggestions}else if(c.mode==='creatorMulti'){for(let ref of c.sourceCreators||[])videos.push(...(await uploads(ref,200)).items);let ids=new Set(c.videos.map(v=>v.id));videos=videos.filter((v,i)=>!ids.has(v.id)&&videos.findIndex(x=>x.id===v.id)===i)}else if(c.mode==='prompt'||c.mode==='similar')videos=await recommend(c.prompt||'video analysis',{creator:c.mode==='similar'?c.sourceChannel:'',existing:c.videos,limit:80,topic:c.topic,exclude:c.exclude,strictness:c.strictness,status:msg=>$('adminMessage').textContent=msg});else if(c.mode==='creator'){let fresh=(await uploads(c.sourceChannel,200)).items;let ids=new Set(c.videos.map(v=>v.id));videos=fresh.filter(v=>!ids.has(v.id))}else{let all=await generate(c),ids=new Set(c.videos.map(v=>v.id));videos=all.filter(v=>!ids.has(v.id))}if(c.order==='shuffle')shuffle(videos);if(videos.length){const base=c.pendingVideos?.length?c.pendingVideos:c.videos;c.pendingVideos=[...base,...videos];c.activateAt=cycleStart(c,now())+CYCLE_MS;}saveLocal();$('adminMessage').textContent=videos.length?`Queued ${videos.length} new programs for the next 3-day rotation. The current schedule is unchanged.`:'No new qualifying videos found; the existing 3-day schedule will repeat.';await autoPublish()}catch(e){$('adminMessage').textContent=e.message}finally{btn.disabled=false}};
-$('remove').onclick=async()=>{let id=$('manageChannel').value;if(!id||!confirm('Delete this channel?'))return;channels=channels.filter(x=>x.id!==id);if(chosen===id){chosen=channels[0]?.id||null;loadedId='';overlay('Channel deleted','Select a channel to watch.',true)}saveLocal();$('adminMessage').textContent='Channel deleted locally.';await autoPublish()};
-// Optional GitHub Contents API integration for publishing. No token is included in site files or shared JSON.
-function persistGitHub(){localStorage.setItem(GITHUB,JSON.stringify(github));$('githubMessage').textContent=github.owner&&github.repo?`Configured ${github.owner}/${github.repo} (${github.branch||'main'}). You can publish channels globally when you supply a token.`:'No GitHub repository connected.'}
-$('saveGitHub').onclick=()=>{github={owner:$('ghOwner').value.trim(),repo:$('ghRepo').value.trim(),branch:$('ghBranch').value.trim()||'main'};token=$('ghToken').value.trim()||token;if(token)sessionStorage.setItem('youtube-guide-github-token',token);$('ghToken').value='';persistGitHub()};
+channels=editing?channels.map(x=>x.id===editing?c:x):[...channels,c];draftState(true);saveLocal();$('createDialog').close();chosen=c.id;tune(c.id);$('adminMessage').textContent=`Created ${items.length} programs for ${c.name}; publishing…`;await autoPublish({type:'upsert',channel:c});}catch(err){$('createError').textContent=err.message}finally{b.disabled=false;b.textContent=editing?'Save Changes':'Generate & Save Channel'}};
+$('extend').onclick=async()=>{let c=channels.find(x=>x.id===$('manageChannel').value);if(!c)return;let btn=$('extend');btn.disabled=true;$('adminMessage').textContent='Finding eligible videos…';try{let videos=[];if(c.mode==='seeds'){let r=await recommendFromSeeds(c,{existing:c.videos,status:s=>$('adminMessage').textContent=s});videos=r.suggestions}else if(c.mode==='creatorMulti'){for(let ref of c.sourceCreators||[])videos.push(...(await uploads(ref,200)).items);let ids=new Set(c.videos.map(v=>v.id));videos=videos.filter((v,i)=>!ids.has(v.id)&&videos.findIndex(x=>x.id===v.id)===i)}else if(c.mode==='prompt'||c.mode==='similar')videos=await recommend(c.prompt||'video analysis',{creator:c.mode==='similar'?c.sourceChannel:'',existing:c.videos,limit:80,topic:c.topic,exclude:c.exclude,strictness:c.strictness,status:msg=>$('adminMessage').textContent=msg});else if(c.mode==='creator'){let fresh=(await uploads(c.sourceChannel,200)).items;let ids=new Set(c.videos.map(v=>v.id));videos=fresh.filter(v=>!ids.has(v.id))}else{let all=await generate(c),ids=new Set(c.videos.map(v=>v.id));videos=all.filter(v=>!ids.has(v.id))}if(c.order==='shuffle')shuffle(videos);if(videos.length){const base=c.pendingVideos?.length?c.pendingVideos:c.videos;c.pendingVideos=[...base,...videos];c.activateAt=cycleStart(c,now())+CYCLE_MS;}draftState(true);saveLocal();$('adminMessage').textContent=videos.length?`Queued ${videos.length} new programs for the next 3-day rotation. The current schedule is unchanged.`:'No new qualifying videos found; the existing 3-day schedule will repeat.';await autoPublish({type:'upsert',channel:c})}catch(e){$('adminMessage').textContent=e.message}finally{btn.disabled=false}};
+$('remove').onclick=async()=>{let id=$('manageChannel').value;if(!id||!confirm('Delete this channel?'))return;channels=channels.filter(x=>x.id!==id);draftState(true);if(chosen===id){chosen=channels[0]?.id||null;loadedId='';overlay('Channel deleted','Select a channel to watch.',true)}saveLocal();$('adminMessage').textContent='Channel deleted locally.';await autoPublish({type:'delete',id})};
+// GitHub Contents API publishing uses the credentials embedded in index.html.
+function persistGitHub(){localStorage.setItem(GITHUB,JSON.stringify(github));$('githubMessage').textContent=github.owner&&github.repo?`Repository ${github.owner}/${github.repo} (${github.branch||'main'}). ${token?'Ready for automatic publishing.':'Missing GitHub credential.'}`:'No repository configured.'}
+$('saveGitHub').onclick=async()=>{github=EMBEDDED_SETTINGS.owner?{owner:EMBEDDED_SETTINGS.owner,repo:EMBEDDED_SETTINGS.repo,branch:EMBEDDED_SETTINGS.branch||'main'}:{owner:$('ghOwner').value.trim(),repo:$('ghRepo').value.trim(),branch:$('ghBranch').value.trim()||'main'};token=EMBEDDED_SETTINGS.githubToken||$('ghToken').value.trim()||token;if(token)sessionStorage.setItem('youtube-guide-github-token',token);$('ghToken').value='';persistGitHub();try{if(!token)throw Error('Paste your token to enable publishing.');await gitRequest();$('githubMessage').textContent='Automatic publishing connected. Channel create/edit/delete will save to the shared repository.'}catch(e){$('githubMessage').textContent='GitHub connection not verified: '+e.message}};
 function githubPath(){if(!github.owner||!github.repo)throw Error('Connect a GitHub repository first.');return `https://api.github.com/repos/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/contents/YouTube-Guide/channels.json`}
 async function gitRequest(method='GET',body){let r=await fetch(githubPath()+(method==='GET'?`?ref=${encodeURIComponent(github.branch||'main')}`:''),{method,headers:{Accept:'application/vnd.github+json',...(token?{Authorization:'Bearer '+token}:{}),'X-GitHub-Api-Version':'2022-11-28',...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});let d=await r.json();if(!r.ok){let e=Error(d.message||'GitHub API error '+r.status);e.status=r.status;throw e}return d}
 function encode64(s){let bytes=new TextEncoder().encode(s),binary='';for(let b of bytes)binary+=String.fromCharCode(b);return btoa(binary)}
 function decode64(s){let binary=atob(s.replace(/\s/g,'')),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes)}
-async function publish(){if(!token)throw Error('A GitHub repository token is required for publishing.');let sha;try{sha=(await gitRequest()).sha}catch(e){if(e.status!==404)throw e}let payload={message:'Update YouTube Guide channel lineup',content:encode64(JSON.stringify({version:3,scheduleSchemaVersion:1,scheduleHorizonHours:100,refreshIntervalHours:72,updatedAt:new Date().toISOString(),channels},null,2)),branch:github.branch||'main',...(sha?{sha}:{})};await gitRequest('PUT',payload);}
-$('publishGitHub').onclick=async()=>{try{await publish();$('githubMessage').textContent='Channel library committed to GitHub. Public Pages updates may take a few minutes.'}catch(e){$('githubMessage').textContent=e.message}};
-async function pull(){let d=await gitRequest();let data=JSON.parse(decode64(d.content));if(!Array.isArray(data.channels))throw Error('channels.json is not a channel library');channels=data.channels;saveLocal();if(!chosen&&channels.length)chosen=channels[0].id}
-$('pullGitHub').onclick=async()=>{try{await pull();$('githubMessage').textContent='Loaded published channels.'}catch(e){$('githubMessage').textContent=e.message}};
+async function readChannelContents(file){
+ if(file.content && file.encoding==='base64')return JSON.parse(decode64(file.content));
+ // GitHub Contents API does not provide inline contents for files over 1 MB.
+ // Resolve the exact SHA through the Git Blob API, which still supports the file.
+ if(!file.sha)throw Error('GitHub did not provide a channels.json SHA.');
+ const url=`https://api.github.com/repos/${encodeURIComponent(github.owner)}/${encodeURIComponent(github.repo)}/git/blobs/${encodeURIComponent(file.sha)}`;
+ const response=await fetch(url,{headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28'},cache:'no-store'});
+ const blob=await response.json();if(!response.ok)throw Error(blob.message||`Could not read channels.json blob (${response.status})`);
+ if(blob.encoding!=='base64'||!blob.content)throw Error('GitHub returned an unsupported JSON blob encoding.');
+ return JSON.parse(decode64(blob.content));
+}
+async function commitChannelChange(change){
+ publishingNow=true;
+ try{
+ if(!token)throw Error('GitHub publishing token is missing from website configuration.');
+ for(let attempt=0;attempt<5;attempt++){
+  let remote,sha;
+  try{let file=await gitRequest();sha=file.sha;remote=await readChannelContents(file)}
+  catch(e){if(e.status!==404)throw e;remote={version:3,channels:[]}}
+  if(!Array.isArray(remote.channels))throw Error('Remote channels.json has an invalid channels array.');
+  const byId=new Map(remote.channels.map(c=>[c.id,c]));
+  if(change?.type==='delete')byId.delete(change.id);
+  else if(change?.type==='upsert'){
+   let local=change.channel,previous=byId.get(local.id);
+   // Preserve recent backend schedule state if this edit did not change its source.
+   if(previous&&JSON.stringify(previous.seedIds||[])===JSON.stringify(local.seedIds||[])&&previous.mode===local.mode&&previous.order===local.order&&JSON.stringify(previous.playlists||[])===JSON.stringify(local.playlists||[])&&JSON.stringify(previous.sourceCreators||[])===JSON.stringify(local.sourceCreators||[])){
+    if(previous.lastRefreshAt>=(local.lastRefreshAt||0))for(const field of ['schedule','nextSchedule','pendingVideos','activateAt','lastRefreshAt','lastDiscoveryAt','discoveryCount'])if(previous[field]!==undefined)local[field]=previous[field];
+   }
+   for(const other of byId.values())if(other.id!==local.id&&Number(other.number)===Number(local.number))throw Error('This channel number already exists globally.');
+   byId.set(local.id,local);
+  }else{
+   // Manual sync merges local channels instead of deleting concurrently added channels.
+   for(const local of channels){
+    const previous=byId.get(local.id);
+    if(previous && previous.lastRefreshAt>(local.lastRefreshAt||0)){
+     for(const field of ['schedule','nextSchedule','pendingVideos','activateAt','lastRefreshAt','lastDiscoveryAt','discoveryCount']) if(previous[field]!==undefined)local[field]=previous[field];
+    }
+    byId.set(local.id,local);
+   }
+  }
+  const updated={...remote,version:3,scheduleSchemaVersion:1,scheduleHorizonHours:100,refreshIntervalHours:72,updatedAt:new Date().toISOString(),channels:[...byId.values()].sort((a,b)=>a.number-b.number)};
+  try{
+   await gitRequest('PUT',{message:'Update YouTube Guide channel lineup',content:encode64(JSON.stringify(updated,null,2)+'\n'),branch:github.branch||'main',...(sha?{sha}:{})});
+   channels=updated.channels;saveLocal();lastSuccessfullyPublishedAt=updated.updatedAt;draftState(false);return;
+  }catch(e){if((e.status===409||e.status===422)&&attempt<4)continue;throw e}
+ }
+ throw Error('GitHub channels.json changed repeatedly during publishing. Retry.');
+ } finally { publishingNow=false; }
+}
+async function publish(change){const next=publishingQueue.then(()=>commitChannelChange(change));publishingQueue=next.catch(()=>{});return next;}
+
+$('publishGitHub').onclick=async()=>{try{await publish();$('githubMessage').textContent='Channel library published globally to GitHub.'}catch(e){$('githubMessage').textContent='Global publish failed: '+e.message}};
+async function pull(){let d=await gitRequest();let data=await readChannelContents(d);if(!Array.isArray(data.channels))throw Error('channels.json is not a channel library');channels=data.channels;draftState(false);saveLocal();if(!selected()&&channels.length)chosen=channels[0].id}
+$('pullGitHub').onclick=async()=>{try{await pull();$('githubMessage').textContent='Loaded the latest GitHub channels.'}catch(e){$('githubMessage').textContent=e.message}};
 async function loadPublic(){await refreshPublic()}
 // Ordinary visitors consume identical published channel data. No visitor ever
 // performs write operations or independently generates a public schedule.
 let lastPublicStamp='';
+let publishingNow=false;let lastSuccessfullyPublishedAt='';let publishingQueue=Promise.resolve();
 async function refreshPublic(){
+ if(publishingNow||unpublishedDraft)return;
  try{let r=await fetch('./channels.json?ts='+Math.floor(now()/60000),{cache:'no-store'});
  if(!r.ok)return;let raw=await r.text();if(raw===lastPublicStamp)return;
  let d=JSON.parse(raw);if(!Array.isArray(d.channels))return;
+ if(lastSuccessfullyPublishedAt&&(!d.updatedAt||Date.parse(d.updatedAt)<Date.parse(lastSuccessfullyPublishedAt)))return;
  lastPublicStamp=raw;
  // Locally-created channels remain editable until they are published; after
  // publication all viewers (including admins) receive the shared library.
  if(d.channels.length||d.updatedAt){channels=d.channels;saveLocal();if(!selected()){chosen=channels[0]?.id||null;loadedId='';} }
  }catch(e){console.warn('Public channel refresh unavailable:',e.message)}
 }
-function init(){try{channels=JSON.parse(localStorage.getItem(STORE)||'[]');if(!Array.isArray(channels))channels=[]}catch{channels=[]}guideStart=Math.floor(now()/1800000)*1800000;$('ghOwner').value=github.owner||'';$('ghRepo').value=github.repo||'';$('ghBranch').value=github.branch||'main';persistGitHub();draw();loadPublic().then(()=>{if(selected())overlay('Ready to tune',`Choose WATCH LIVE to join channel ${selected().number} at its current broadcast time.`,true);else overlay('Welcome to YouTube Guide','Admin Options → 1234 → configure YouTube API and create a channel.',true)});setInterval(tick,1000);setInterval(refreshPublic,60000);setInterval(()=>{let start=Math.floor(now()/1800000)*1800000;if(guideStart===start-1800000)guideStart=start;guide()},30000)}
+function init(){if(EMBEDDED_SETTINGS.owner&&EMBEDDED_SETTINGS.repo){github={owner:EMBEDDED_SETTINGS.owner,repo:EMBEDDED_SETTINGS.repo,branch:EMBEDDED_SETTINGS.branch||'main'};token=EMBEDDED_SETTINGS.githubToken||token;apiKey=EMBEDDED_SETTINGS.youtubeApiKey||apiKey;}try{channels=JSON.parse(localStorage.getItem(STORE)||'[]');if(!Array.isArray(channels))channels=[]}catch{channels=[]}guideStart=Math.floor(now()/1800000)*1800000;$('ghOwner').value=github.owner||'';$('ghRepo').value=github.repo||'';$('ghBranch').value=github.branch||'main';persistGitHub();draw();loadPublic().then(()=>{if(selected())overlay('Ready to tune',`Choose WATCH LIVE to join channel ${selected().number} at its current broadcast time.`,true);else overlay('Welcome to YouTube Guide','Admin Options → 1234 → configure YouTube API and create a channel.',true)});setInterval(tick,1000);setInterval(refreshPublic,60000);setInterval(()=>{let start=Math.floor(now()/1800000)*1800000;if(guideStart===start-1800000)guideStart=start;guide()},30000)}
 init();

@@ -55,7 +55,7 @@ with sync_playwright() as p:
         print('PREVIEW:',page.locator('#seedProgress').inner_text())
         raise
     msg=page.locator('#adminMessage').inner_text()
-    assert 'Saved 13 programs' in msg,msg
+    assert 'Created 13 programs' in msg,msg
     local=page.evaluate("JSON.parse(localStorage.getItem('youtube-guide-v07-channels'))")
     assert len(local)==1
     assert local[0]['feedPrompt'].startswith('Ben 10')

@@ -54,7 +54,7 @@ class AdaptiveScheduleTests(unittest.TestCase):
         self.assertEqual((attempts,count),(1,1))
         self.assertIn('NEW',[v['id'] for v in c['pendingVideos']])
         self.assertEqual(c['nextSchedule']['durationHours'],100)
-        self.assertEqual(c['activateAt'],72*3600000 if when<72*3600000 else 144*3600000)
+        self.assertEqual(c['activateAt'],100*3600000)  # Append to the existing 100h EPG
 
     def test_offline_run_still_builds_100_hours(self):
         c=self.channel()

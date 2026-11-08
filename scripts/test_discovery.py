@@ -14,7 +14,7 @@ class RefreshTests(unittest.TestCase):
             r.refresh_one(c,1000)
             self.assertEqual([v['id'] for v in c['videos']],['OLD'])
             self.assertEqual([v['id'] for v in c['pendingVideos']],['OLD','NEW'])
-            self.assertEqual(c['activateAt'],r.CYCLE_MS)
+            self.assertEqual(c['activateAt'],1000)  # No prior EPG: start immediately
         finally:r.refresh_recommendations=orig
     def test_no_discovery_repeats_and_stages(self):
         c=self.channel();orig=r.refresh_recommendations
@@ -22,7 +22,7 @@ class RefreshTests(unittest.TestCase):
             r.refresh_recommendations=lambda x:([],'nothing')
             r.refresh_one(c,1000)
             self.assertEqual([v['id'] for v in c['pendingVideos']],['OLD'])
-            self.assertEqual(c['activateAt'],r.CYCLE_MS)
+            self.assertEqual(c['activateAt'],1000)  # No prior EPG: start immediately
         finally:r.refresh_recommendations=orig
     def test_playlist_updates_and_removed_items(self):
         c=self.channel('playlist');orig=r.refresh_source

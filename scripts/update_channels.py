@@ -22,7 +22,21 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'YouTube-Guide' / 'channels.json'
 MAX_RECOMMENDATION_SEARCHES = max(0, min(90, int(os.environ.get('CHANNEL_SEARCHES_PER_RUN', '90'))))
 MAX_SOURCE_CHANNELS = max(0, min(250, int(os.environ.get('SOURCE_CHANNELS_PER_RUN', '250'))))
-API_KEY = os.environ.get('YOUTUBE_API_KEY', '').strip()
+def configured_youtube_key():
+    key = os.environ.get('YOUTUBE_API_KEY', '').strip()
+    if key:
+        return key
+    html = ROOT / 'YouTube-Guide' / 'index.html'
+    try:
+        page = html.read_text(encoding='utf-8')
+        match = re.search(r'window\.YOUTUBE_GUIDE_SETTINGS\s*=\s*(\{[^;]+\})\s*;', page)
+        if match:
+            return str(json.loads(match.group(1)).get('youtubeApiKey', '')).strip()
+    except (OSError, ValueError):
+        pass
+    return ''
+
+API_KEY = configured_youtube_key()
 STOP = set('the and that from this with your video videos review reviews analysis explained overview theory ranking ranked best most about what how why the new one all official full episode episodes trailer part reaction shorts'.split())
 
 def api(resource, **args):
@@ -172,10 +186,13 @@ def stage(channel,new_items,now_ms,source=False):
     if not pool:pool=current
     if not pool:return False
     anchor=int(channel.get('anchor') if channel.get('anchor') is not None else now_ms)
-    next_boundary=anchor+((now_ms-anchor)//CYCLE_MS+1)*CYCLE_MS
+    # Extend continuously from the end of the currently published EPG.
+    # Starting strictly at a 72h boundary could create a gap after a 100h EPG.
+    current_end=int((channel.get('schedule') or {}).get('end') or 0)
+    next_start=max(now_ms, current_end)
     channel['pendingVideos']=pool
-    channel['activateAt']=next_boundary
-    channel['nextSchedule']=build_schedule(channel, pool, next_boundary)
+    channel['activateAt']=next_start
+    channel['nextSchedule']=build_schedule(channel, pool, next_start)
     return True
 
 def refresh_one(channel,now_ms):
@@ -189,7 +206,7 @@ def refresh_one(channel,now_ms):
         source=True
     stage(channel,new,now_ms,source=source)
     channel['lastDiscoveryAt']=now_ms
-    return detail+f'; {len(new)} eligible programs; next cycle staged'
+    return detail+f'; {len(new)} eligible programs; upcoming uninterrupted schedule staged'
 
 def refresh_staggered(data, now_ms, force=False, api_available=True):
     """Every half hour, replenish whichever *existing* channels are low on airtime.
@@ -198,6 +215,8 @@ def refresh_staggered(data, now_ms, force=False, api_available=True):
     not a fixed-size round-robin.  Failed discovery reuses cached programs.
     """
     channels=data.get('channels') or []
+    # Promote already active staged content even if the channel is not due for discovery.
+    promoted=sum(bool(promote_if_due(c,now_ms)) for c in channels)
     due=[c for c in channels if c.get('videos') and refresh_due(c,now_ms,force)]
     attempted=0
     updated=0
@@ -225,11 +244,11 @@ def refresh_staggered(data, now_ms, force=False, api_available=True):
             stage(c,[],now_ms,source=False)
         if c.get('nextSchedule'):
             updated+=1
-        # Ensure that the active EPG stays usable until the next boundary.
+        # Ensure the active EPG is usable even if discovery was unavailable.
         if not c.get('schedule') and c.get('videos'):
             c['schedule']=build_schedule(c,c['videos'],now_ms)
         c['lastRefreshAt']=now_ms
-    if attempted:
+    if attempted or promoted:
         data['updatedAt']=dt.datetime.fromtimestamp(now_ms/1000,dt.timezone.utc).isoformat()
         data['scheduleSchemaVersion']=1
         data['scheduleHorizonHours']=100
@@ -244,8 +263,9 @@ def main():
     data=json.loads(DATA.read_text(encoding='utf-8'))
     now_ms=int(dt.datetime.now(dt.timezone.utc).timestamp()*1000)
     force=os.environ.get('FORCE_CHANNEL_REFRESH','').strip()=='1'
+    old_data=json.dumps(data,sort_keys=True)
     attempted,updated=refresh_staggered(data,now_ms,force=force,api_available=bool(API_KEY))
-    if attempted:
+    if json.dumps(data,sort_keys=True)!=old_data:
         DATA.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(f'Slot refreshed {attempted} channels; staged >=100h EPG for {updated}. '
           f'Next check in 30 minutes; due channels selected by airtime remaining. API key present: {bool(API_KEY)}.')
